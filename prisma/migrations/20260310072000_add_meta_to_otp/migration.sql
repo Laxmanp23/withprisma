@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Otp` ADD COLUMN `meta` VARCHAR(191) NULL;

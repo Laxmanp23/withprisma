@@ -1,0 +1,218 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  STAFF
+}
+
+enum PaymentMethod {
+  CASH
+  BANK
+  UPI
+}
+
+model Shop {
+  id        Int      @id @default(autoincrement())
+  name      String
+  ownerId   Int
+
+  createdAt DateTime @default(now())
+
+  users     User[]
+  products  Product[]
+  customers Customer[]
+  vendors   Vendor[]
+  invoices  Invoice[]
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  password   String
+  phone      String   @unique
+  role       Role     @default(ADMIN)
+  isVerified Boolean  @default(false)
+
+  shopId Int?
+  shop   Shop? @relation(fields: [shopId], references: [id])
+
+  refreshTokens RefreshToken[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  isDeleted  Boolean  @default(false)
+  deletedAt  DateTime?
+
+  invoices   Invoice[]
+
+  @@index([email])
+}
+model Otp {
+  id        Int      @id @default(autoincrement())
+  email     String
+  otp       String
+  type      String
+  meta      String?
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model ProductUnit {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  products  Product[]
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  stock       Float
+
+  shopId Int
+  shop   Shop @relation(fields: [shopId], references: [id])
+
+  unitId Int
+  unit   ProductUnit @relation(fields: [unitId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean  @default(false)
+  deletedAt DateTime?
+
+  items InvoiceItem[]
+}
+
+model Vendor {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String
+  email     String?
+  address   String?
+  balance   Float    @default(0)
+
+  shopId Int
+  shop   Shop @relation(fields: [shopId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  isDeleted Boolean  @default(false)
+  deletedAt DateTime?
+
+  ledgers Ledger[]
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String
+  address   String?
+  balance   Float    @default(0)
+
+  shopId Int
+  shop   Shop @relation(fields: [shopId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  isDeleted Boolean  @default(false)
+  deletedAt DateTime?
+
+  invoices Invoice[]
+  ledgers  Ledger[]
+}
+
+model Invoice {
+  id            Int      @id @default(autoincrement())
+  invoiceNumber String   @unique
+
+  shopId Int
+  shop   Shop @relation(fields: [shopId], references: [id])
+
+  customerId Int
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  totalAmount Float
+
+  createdAt DateTime @default(now())
+
+  items    InvoiceItem[]
+  payments Payment[]
+}
+
+model InvoiceItem {
+  id Int @id @default(autoincrement())
+
+  invoiceId Int
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity Float
+  price    Float
+}
+
+model Payment {
+  id Int @id @default(autoincrement())
+
+  invoiceId Int
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+
+  amount Float
+  method PaymentMethod
+
+  createdAt DateTime @default(now())
+}
+
+model Ledger {
+  id Int @id @default(autoincrement())
+
+  customerId Int?
+  vendorId   Int?
+
+  debit  Float @default(0)
+  credit Float @default(0)
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+  vendor   Vendor?   @relation(fields: [vendorId], references: [id])
+
+  createdAt DateTime @default(now())
+}

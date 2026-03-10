@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "typeRoots": ["./src/types", "./node_modules/@types"]
+  },
+  
+  "include": ["src/**/*", "prisma/seed.ts","src","src/types"],
+  "exclude": ["node_modules", "dist"]
+}
