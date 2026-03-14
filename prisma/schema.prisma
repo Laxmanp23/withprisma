@@ -9,8 +9,8 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
@@ -27,46 +27,48 @@ enum PaymentMethod {
 }
 
 model Shop {
-  id        Int      @id @default(autoincrement())
-  name      String
-  ownerId   Int
+  id      Int    @id @default(autoincrement())
+  name    String
+  ownerId Int
 
   createdAt DateTime @default(now())
 
-  users     User[]
-  products  Product[]
-  customers Customer[]
-  vendors   Vendor[]
-  invoices  Invoice[]
+  users        User[]
+  products     Product[]
+  customers    Customer[]
+  vendors      Vendor[]
+  invoices     Invoice[]
+  productUnits ProductUnit[]
 }
 
 model User {
-  id         Int      @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   name       String
-  email      String   @unique
+  email      String  @unique
   password   String
-  phone      String   @unique
-  role       Role     @default(ADMIN)
-  isVerified Boolean  @default(false)
+  phone      String  @unique
+  role       Role    @default(ADMIN)
+  isVerified Boolean @default(false)
 
   shopId Int?
   shop   Shop? @relation(fields: [shopId], references: [id])
 
   refreshTokens RefreshToken[]
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  isDeleted  Boolean  @default(false)
-  deletedAt  DateTime?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
 
-  invoices   Invoice[]
+  invoices Invoice[]
 
   @@index([email])
 }
+
 model Otp {
   id        Int      @id @default(autoincrement())
-  email     String
+  email     String   @unique
   otp       String
   type      String
   meta      String?
@@ -89,15 +91,20 @@ model RefreshToken {
 }
 
 model ProductUnit {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
+  id     Int    @id @default(autoincrement())
+  name   String
+  shopId Int
+  shop   Shop   @relation(fields: [shopId], references: [id])
+
   createdAt DateTime @default(now())
 
-  products  Product[]
+  products Product[]
+
+  @@unique([name, shopId])
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   name        String
   description String?
   price       Float
@@ -112,44 +119,44 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  isDeleted Boolean  @default(false)
+  isDeleted Boolean   @default(false)
   deletedAt DateTime?
 
   items InvoiceItem[]
 }
 
 model Vendor {
-  id        Int      @id @default(autoincrement())
-  name      String
-  phone     String
-  email     String?
-  address   String?
-  balance   Float    @default(0)
+  id      Int     @id @default(autoincrement())
+  name    String
+  phone   String
+  email   String?
+  address String?
+  balance Float   @default(0)
 
   shopId Int
   shop   Shop @relation(fields: [shopId], references: [id])
 
   createdAt DateTime @default(now())
 
-  isDeleted Boolean  @default(false)
+  isDeleted Boolean   @default(false)
   deletedAt DateTime?
 
   ledgers Ledger[]
 }
 
 model Customer {
-  id        Int      @id @default(autoincrement())
-  name      String
-  phone     String
-  address   String?
-  balance   Float    @default(0)
+  id      Int     @id @default(autoincrement())
+  name    String
+  phone   String
+  address String?
+  balance Float   @default(0)
 
   shopId Int
   shop   Shop @relation(fields: [shopId], references: [id])
 
   createdAt DateTime @default(now())
 
-  isDeleted Boolean  @default(false)
+  isDeleted Boolean   @default(false)
   deletedAt DateTime?
 
   invoices Invoice[]
@@ -157,8 +164,8 @@ model Customer {
 }
 
 model Invoice {
-  id            Int      @id @default(autoincrement())
-  invoiceNumber String   @unique
+  id            Int    @id @default(autoincrement())
+  invoiceNumber String @unique
 
   shopId Int
   shop   Shop @relation(fields: [shopId], references: [id])

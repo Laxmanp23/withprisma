@@ -1,5 +1,30 @@
 import { prisma } from "../../config/prisma"
+import { Role } from "@prisma/client"
 
+export const emailExistOtp = (email:string) => {
+  return prisma.otp.findFirst({
+    where: {email},
+    orderBy:{
+      createdAt:"desc"
+    }
+  })
+}
+
+export const findOtpRepo = (email: string, otp: string) => {
+  return prisma.otp.findFirst({
+    where: {
+      email,
+      otp,
+      verified: false
+    },
+  })
+}
+
+export const createOtpRepo = (data:any) => {
+  return prisma.otp.create({
+    data
+  })
+}
 
 export const findUserByEmail = (email:string) => {
   return prisma.user.findUnique({
@@ -8,20 +33,31 @@ export const findUserByEmail = (email:string) => {
   })
 }
 
-export const createUserRepo = (data:any) => {
-  return prisma.user.create({
-    data,
-    select:{
-      id:true,
-      name:true,
-      email:true,
-      phone:true,
-      password:false,
-      role:true,
-      createdAt:false
-    }
-  })
-}
+
+export const createUserAndVerifyOtpRepo = async (
+  data: any,
+  hashedPassword: string,
+  otpId: number
+) => {
+
+  return prisma.$transaction([
+    prisma.user.create({
+      data: {
+        ...data,
+        password: hashedPassword,
+        role: Role.ADMIN,
+        isVerified:true
+      }
+    }),
+
+    prisma.otp.update({
+      where: { id: otpId },
+      data: { verified: true,meta: null },
+    }),
+  ])
+};
+
+
 
 export const userSelect = {
   id: true,
@@ -39,41 +75,10 @@ export const userWithPasswordSelect = {
   password: true
 }
 
-//otp section
-
-export const createOtpRepo = (data:any) => {
-  return prisma.otp.create({
-    data
-  })
-}
-
-export const findOtpRepo = (email:string,type:string) => {
-  return prisma.otp.findFirst({
-    where:{
-      email,
-      type,
-      verified:false
-    }
-  })
-}
-
-export const verifyOtpRepo = (id:number) => {
-  return prisma.otp.update({
-    where:{ id },
-    data:{ verified:true }
-  })
-}
-
 export const updateUserVerified = (email:string) => {
   return prisma.user.update({
     where:{ email },
     data:{ isVerified:true }
-  })
-}
-
-export const deleteMetaData = (id:number) =>{
-  return prisma.otp.delete({
-    where:{id}
   })
 }
 
@@ -84,6 +89,19 @@ export const updateOtpRepo = (id:number,otp:string,expiresAt:Date) => {
       otp,
       expiresAt,
       verified:false
+    }
+  })
+}
+
+
+
+export const resendOtpRepo = async(email:string,type:string) => {
+  return prisma.otp.findFirst({
+    where: {
+      email,type,verified:false
+    },
+    orderBy: {
+      createdAt: "desc"
     }
   })
 }

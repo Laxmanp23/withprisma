@@ -7,7 +7,10 @@ export class UserService {
 
   async createStaff(user: any, body: any) {
 
-    const existingStaff = UserRepository
+    const existingStaf = await userRepository.findByEmail(body.email)
+    if (existingStaf) {
+      throw new Error("Email alrady Exist")
+    }
     if (!user) {
       throw new Error("Unauthorized");
     }

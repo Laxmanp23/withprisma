@@ -40,10 +40,10 @@ async function main() {
   // Product Units
   await prisma.productUnit.createMany({
     data: [
-      { name: "kg" },
-      { name: "ml" },
-      { name: "piece" },
-      { name: "bag" },
+      { name: "kg", shopId:shop.id},
+      { name: "ml",shopId:shop.id },
+      { name: "piece",shopId:shop.id },
+      { name: "bag",shopId:shop.id},
     ],
     skipDuplicates: true,
   });

@@ -1,21 +1,21 @@
 import bcrypt from "bcrypt"
-import { Role } from "@prisma/client"
 import {
-  createUserRepo, findUserByEmail,
-  findOtpRepo, verifyOtpRepo, updateOtpRepo,
-  createOtpRepo, deleteMetaData
+  findUserByEmail,
+  findOtpRepo, updateOtpRepo,
+  createOtpRepo, createUserAndVerifyOtpRepo,
+  emailExistOtp, resendOtpRepo
 } from "./auth.repository"
 import jwt from "jsonwebtoken"
 import { generateOtp } from "../../utils/otp"
-import { sendEmail } from "../../utils/sendEmail"
 import { getOtpEmailTemplate } from "../../utils/emailTemplate"
 import dotenv from "dotenv"
+import { emailQueue } from "../../queues/email.queue"
 
 dotenv.config()
 
 export const signupService = async (data: any) => {
 
-  const existingUser = await findUserByEmail(data.email)
+  const existingUser = await emailExistOtp(data.email)
 
   if (existingUser) {
     throw new Error("Email already exists")
@@ -41,11 +41,14 @@ export const signupService = async (data: any) => {
 
   const html = getOtpEmailTemplate(data.name, otp)
 
-  sendEmail(
-    data.email,
-    "Verify your email address – OTP Code",
+  await emailQueue.add("sendEmail", {
+    email: data.email,
+    subject: "Verify your email address – OTP Code",
     html
-  )
+  }, {
+    attempts: 3,
+    backoff: 5000
+  })
 
   return {
     message: "User created. OTP sent to email"
@@ -88,7 +91,7 @@ export const verifyOtpService = async (email: string, otp: string) => {
   const record = await findOtpRepo(email, otp)
 
   if (!record) {
-    throw new Error("Invalid OTP")
+    throw new Error("Invalid Email")
   }
 
   if (record.expiresAt < new Date()) {
@@ -96,7 +99,6 @@ export const verifyOtpService = async (email: string, otp: string) => {
   }
 
   if (!record.meta) {
-
     throw new Error("Signup data missing")
   }
 
@@ -104,18 +106,12 @@ export const verifyOtpService = async (email: string, otp: string) => {
 
   const hashedPassword = await bcrypt.hash(data.password, 10)
 
-  await createUserRepo({
-    ...data,
-    password: hashedPassword,
-    role: Role.ADMIN
-  })
-
-  await verifyOtpRepo(record.id)
-  await deleteMetaData(record.id)
+  await createUserAndVerifyOtpRepo(data, hashedPassword, record.id)
 
   return {
     message: "Email verified successfully"
   }
+
 }
 
 export const resendOtpService = async (email: string) => {
@@ -126,7 +122,7 @@ export const resendOtpService = async (email: string) => {
     throw new Error("User already registered")
   }
 
-  const existingOtp = await findOtpRepo(email, "EMAIL_VERIFY")
+  const existingOtp = await resendOtpRepo(email, "EMAIL_VERIFY")
 
   if (!existingOtp) {
     throw new Error("No signup request found")
@@ -146,11 +142,14 @@ export const resendOtpService = async (email: string) => {
 
   const html = getOtpEmailTemplate(data.name, otp)
 
-  await sendEmail(
+  await emailQueue.add("sendEmail", {
     email,
-    "Resend OTP – Verify your email",
+    subject: "Resend OTP – Verify your email",
     html
-  )
+  }, {
+    attempts: 3,
+    backoff: 5000
+  })
 
   return {
     message: "New OTP sent successfully"

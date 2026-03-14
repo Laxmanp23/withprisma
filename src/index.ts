@@ -1,25 +1,66 @@
 import express,{Request,Response} from "express";
+import cors from "cors";
+import rateLimit from "express-rate-limit"
+import fs from "fs";
+import path from "path";
+import morgan from "morgan"
+import compression from "compression"
+import dotenv from "dotenv";
+import helmet from "helmet";
+dotenv.config();
+
+import { env } from "./config/env";
 import authRoutes from "./modules/Authentication/auth.routes";
 import shopRoutes from "./modules/Shop/shop.routes";
 import userRoutes from "./modules/User/user.routes";
+import productunitRoutes from "./modules/productUnit/productUnit.routes";
 import { errorHandler } from "./middlewares/error.middleware";
-import { authMiddleware } from "./middlewares/auth.middleware";
-import {requireShop} from "./middlewares/shop.middleware"
+import { serverAdapter } from "./config/bullBoard";
 
 
 const app = express();
+
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, "access.log"),
+  { flags: "a" }
+);
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+})
+
+app.use(morgan("combined", { stream: accessLogStream }));
+app.use(cors({ origin: `http://localhost:${env.PORT}`,credentials: true}))
 app.use(express.json());
+app.use(compression({level:6,threshold:1024}))
+app.use(limiter)
+app.use(helmet());
 
-app.use("/auth", authRoutes);
-app.use("/shops",authMiddleware,shopRoutes);
-app.use("/users",userRoutes);
-app.use(errorHandler);
 
+
+//Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/shops",shopRoutes);
+app.use("/api/users",userRoutes);
+app.use("/api/prductunit",productunitRoutes);
+
+app.use("/admin/queues", serverAdapter.getRouter());
 app.get('/',(req:Request,res:Response)=>{
     res.send("This is a localserver!!!!")
 })
 
+// api speed test
+// app.get("/", (req: Request, res: Response) => {
+//   res.json({
+//     message: "Server running",
+//     data: new Array(4000).fill("test-data")
+//   });
+// });
 
-app.listen(3000, () => {
+//Error Handler
+app.use(errorHandler);
+
+app.listen(env.PORT, () => {
   console.log(`Server running on port http://localhost:3000`);
 });

@@ -6,16 +6,23 @@ export const sendEmail = async (
   html: string
 ) => {
 
+  const emailUser = process.env.EMAIL_USER?.trim()
+  const emailPass = process.env.EMAIL_PASS?.trim()
+
+  if (!emailUser || !emailPass) {
+    throw new Error("EMAIL_USER or EMAIL_PASS is missing")
+  }
+
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+      user: emailUser,
+      pass: emailPass
     }
   })
 
   await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+    from: emailUser,
     to,
     subject,
     html   // important

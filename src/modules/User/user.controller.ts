@@ -1,59 +1,52 @@
 import { Request, Response } from "express";
 import { UserService } from "./user.service";
 import { AuthRequest } from "../../types/request.types";
+import { apiResponse } from "../../utils/apiResponse";
+import { asyncHandler } from "../../utils/asyncHandler";
 
 const userService = new UserService();
 
 export class UserController {
 
-  async createStaff(req: AuthRequest, res: Response) {
-    try {
+  createStaff = asyncHandler(async (req: AuthRequest, res: Response) => {
 
-      const result = await userService.createStaff(req.user, req.body);
+    const result = await userService.createStaff(req.user, req.body);
 
-      res.status(201).json(result);
+    apiResponse(res, 201, true, "user created successfully", result)
+  })
 
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  }
+  getUsers = asyncHandler(async (req: AuthRequest, res: Response) =>{
 
-  async getUsers(req: AuthRequest, res: Response) {
-
-     if (!req.user) {
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized"
-    })
-  }
     const users = await userService.getUsers(req.user);
-    res.json(users);
-  }
 
-  async getUser(req: AuthRequest, res: Response) {
+    apiResponse(res,200,true,"User Fetched",users)
+  })
+
+  getUser = asyncHandler (async(req: AuthRequest, res: Response) =>{
 
     const id = Number(req.params.id);
 
     const user = await userService.getUserById(req.user, id);
 
-    res.json(user);
-  }
+    apiResponse(res,200,true,"User Fetched",user)
+  })
 
-  async updateUser(req: AuthRequest, res: Response) {
+ updateUser = asyncHandler( async (req: AuthRequest, res: Response) => {
 
     const id = Number(req.params.id);
 
     const user = await userService.updateUser(req.user, id, req.body);
 
-    res.json(user);
-  }
+    apiResponse(res,200,true,"User Updated",user)
 
-  async deleteUser(req: AuthRequest, res: Response) {
+  })
+
+  deleteUser = asyncHandler(async (req: AuthRequest, res: Response) => {
 
     const id = Number(req.params.id);
 
     await userService.deleteUser(req.user, id);
 
-    res.json({ message: "User deleted" });
-  }
+    apiResponse(res,200,true,"User Deleted")
+  })
 }
