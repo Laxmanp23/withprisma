@@ -4,7 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { apiResponse } from "../../utils/apiResponse";
 import { AuthRequest } from "../../types/request.types";
 
-export const createProductUnit = asyncHandler(async(req:AuthRequest,res:Response)=>{
+export const createProductUnit = asyncHandler(async(req:AuthRequest,res:Response) => {
     const {name} = req.body;
     const shopId = req.user?.shopId;
     console.log("User:", req.user);

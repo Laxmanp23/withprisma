@@ -14,6 +14,7 @@ import authRoutes from "./modules/Authentication/auth.routes";
 import shopRoutes from "./modules/Shop/shop.routes";
 import userRoutes from "./modules/User/user.routes";
 import productunitRoutes from "./modules/productUnit/productUnit.routes";
+import productRoutes from "./modules/product/product.routes";
 import { errorHandler } from "./middlewares/error.middleware";
 import { serverAdapter } from "./config/bullBoard";
 
@@ -44,6 +45,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/shops",shopRoutes);
 app.use("/api/users",userRoutes);
 app.use("/api/prductunit",productunitRoutes);
+app.use("/api/products",productRoutes);
 
 app.use("/admin/queues", serverAdapter.getRouter());
 app.get('/',(req:Request,res:Response)=>{

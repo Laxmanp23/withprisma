@@ -1,5 +1,5 @@
 import { prisma } from "../../config/prisma"
-import { Role } from "@prisma/client"
+import {Role} from "@prisma/client"
 
 export const emailExistOtp = (email:string) => {
   return prisma.otp.findFirst({
@@ -45,6 +45,7 @@ export const createUserAndVerifyOtpRepo = async (
       data: {
         ...data,
         password: hashedPassword,
+        // role: "ADMIN",
         role: Role.ADMIN,
         isVerified:true
       }
